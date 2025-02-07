@@ -1,13 +1,16 @@
-const CACHE_NAME = "network-setting-pwa-v2";
+const CACHE_NAME = "network-setting-pwa-v4";
 const urlsToCache = [
-    "/",
-    "/index.html",
+    "/",                // 기본 페이지
+    "/index.html",      // 메인 페이지
+    "/search_index.json",  // ✅ 검색 데이터 캐싱 추가
+    "/manifest.webmanifest",  // PWA 메타 정보 추가
+    "/service-worker.js", // 서비스 워커 자체도 캐싱
     "/assets/FASTECH.png",
     "/assets/icon-192x192.png",
     "/assets/icon-512x512.png"
 ];
 
-// 설치 이벤트 (캐시 저장)
+// 서비스 워커 설치 시 캐시 저장
 self.addEventListener("install", event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -16,7 +19,7 @@ self.addEventListener("install", event => {
     );
 });
 
-// 요청 가로채기 및 캐싱된 데이터 반환 (동적 캐싱 추가)
+// 요청 가로채기 및 캐싱된 데이터 반환
 self.addEventListener("fetch", event => {
     event.respondWith(
         caches.match(event.request).then(response => {
@@ -38,6 +41,6 @@ self.addEventListener("activate", event => {
                 cacheNames.filter(cache => cache !== CACHE_NAME)
                           .map(cache => caches.delete(cache))
             );
-        })
+        }).then(() => self.clients.claim()) // 활성화 즉시 컨트롤 적용
     );
 });
