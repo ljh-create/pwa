@@ -1,20 +1,37 @@
-const CACHE_NAME = "network-setting-pwa-v7";
+const CACHE_NAME = "network-setting-pwa-v10";
+const OFFLINE_PAGE = "/offline.html"; 
+
 const urlsToCache = [
     "/",  
     "/index.html",  
     "/manifest.webmanifest",
     "/search_index.json",
-    "/service-worker.js"
+    "/service-worker.js",
+    OFFLINE_PAGE
 ];
 
-// 파일 목록을 동적으로 로드
+// 파일 목록을 동적으로 로드 (JSON 오류 처리 추가)
 async function loadFileList() {
     try {
-        const response = await fetch("/fileList.json"); // 🔹 자동 생성된 파일 불러오기
-        const files = await response.json();
+        const response = await fetch("/fileList.json");
+
+        // HTTP 응답이 정상인지 확인 (404 방지)
+        if (!response.ok) {
+            console.error("❌ 파일 리스트 로드 실패: HTTP " + response.status);
+            return urlsToCache;
+        }
+
+        // JSON 파싱 전에 텍스트로 먼저 확인
+        const text = await response.text();
+        if (text.startsWith("<")) {  // JSON이 아니라 HTML이면 (404 등)
+            console.error("❌ fileList.json이 JSON 형식이 아님");
+            return urlsToCache;
+        }
+
+        const files = JSON.parse(text);
         return [...urlsToCache, ...files];
     } catch (error) {
-        console.error("❌ 파일 리스트 로드 실패:", error);
+        console.error("❌ 파일 리스트 로드 중 예외 발생:", error);
         return urlsToCache;
     }
 }
@@ -38,7 +55,7 @@ self.addEventListener("fetch", event => {
                     return fetchResponse;
                 });
             });
-        }).catch(() => caches.match("/index.html"))  // 오프라인 시 기본 페이지 제공
+        }).catch(() => caches.match(OFFLINE_PAGE)) // ✅ 오프라인 시 캐싱된 페이지 제공
     );
 });
 
