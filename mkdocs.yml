@@ -22,10 +22,9 @@ theme:
 
 # 플러그인 설정 (Offline + PWA 관련 기능 추가)
 plugins:
-  - offline
   - glightbox
   - search
-
+#  - offline
 # Markdown에서 Keyboard 아이콘 사용
 markdown_extensions:
   - admonition
