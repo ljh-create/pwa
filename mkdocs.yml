@@ -39,13 +39,16 @@ markdown_extensions:
 extra_javascript:
   - service-worker.js
 
+use_directory_urls: false
+
 extra:
   manifest: manifest.webmanifest
+  pwa:
+    scope: "./"
+    version: "1.0.0"
 
 # PWA 관련 설정 (디렉토리 URL 문제 방지)
-use_directory_urls: false
-scope: "./"
-version: 1.0.0
+
 
 # 내비게이션 설정 (기존 구조 유지)
 nav:
