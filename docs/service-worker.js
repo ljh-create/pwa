@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v12";
+const CACHE_NAME = "network-setting-pwa-v14";
 const OFFLINE_PAGE = "/offline.html"; // ✅ 오프라인 전용 페이지 추가
 
 const urlsToCache = [
@@ -36,16 +36,23 @@ async function loadFileList() {
     }
 }
 
-// 서비스 워커 설치 시 파일 목록을 불러와 캐싱
+// **서비스 워커 설치 시 개별 요청으로 캐싱 (전체 실패 방지)**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
             return caches.open(CACHE_NAME).then(cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
-                return cache.addAll(files);
+                return Promise.all(
+                    files.map(file =>
+                        fetch(file, { mode: "no-cors" }) // ✅ CORS 문제 해결 시도
+                            .then(response => {
+                                if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
+                                return cache.put(file, response);
+                            })
+                            .catch(error => console.warn(`⚠️ 캐싱 실패: ${file}`, error))
+                    )
+                );
             });
-        }).catch(error => {
-            console.error("❌ 캐싱 중 오류 발생:", error);
         }).then(() => self.skipWaiting())
     );
 });
