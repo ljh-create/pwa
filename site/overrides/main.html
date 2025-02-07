@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  <!-- PWA Manifest 추가 -->
+  <link rel="manifest" href="{{ base_url }}/manifest.webmanifest">
+
+  <!-- Service Worker 등록 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register("{{ base_url }}/service-worker.js")
+        .then(reg => console.log("Service Worker 등록 성공:", reg))
+        .catch(err => console.log("Service Worker 등록 실패:", err));
+    }
+  </script>
+{% endblock %}

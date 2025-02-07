@@ -1,0 +1,66 @@
+# 사이트 이름
+site_name: Network Setting 프로그램
+
+# 저작권 문구
+copyright: Copyright &copy; 2025 FASTECH Co., Ltd. All rights reserved.
+
+# 테마 설정
+theme:
+  name: material
+  custom_dir: docs/overrides  # PWA 적용을 위한 오버라이드 디렉토리 설정
+  logo: ./assets/FASTECH.png
+  palette:
+    primary: yellow
+    accent: black
+  font:
+    text: Noto Sans
+  language: ko
+  features:
+    - navigation.indexes
+    #- navigation.sections
+    #- toc.integrate       # 페이지의 목차가 왼쪽 전체 목차에 포함됨
+
+# 플러그인 설정 (Offline + PWA 관련 기능 추가)
+plugins:
+  - offline
+  - glightbox
+  - search
+
+# Markdown에서 Keyboard 아이콘 사용
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.superfences
+
+# PWA 적용 (service-worker 및 manifest 연결)
+extra_javascript:
+  - service-worker.js
+
+extra:
+  manifest: manifest.webmanifest
+
+# PWA 관련 설정 (디렉토리 URL 문제 방지)
+use_directory_urls: false
+scope: "./"
+version: 1.0.0
+
+# 내비게이션 설정 (기존 구조 유지)
+nav:
+  - 시작: index.md
+  - 설치하기: chapter_1_Install.md
+  - 프로그램 실행하기: chapter_2_Run_Program.md
+  - 화면 설명: 
+    - '메인 화면': Chapter3/MainWindow.md
+    - '동작 테스트': Chapter3/MotionTest.md
+    - '알람 기록': Chapter3/AlarmHistory.md
+    - 'EtherCAT 상태 모니터링': Chapter3/EtherCATMonitoring.md
+    - 'EtherCAT 파라미터': Chapter3/EtherCATParameter.md
+    - 'Network 상태': Chapter3/NetworkStatus.md
+    - 'EtherCAT Object 사전': Chapter3/EtherCATObjectDictionary.md
+    - 'EtherCAT PDO 확인': Chapter3/EtherCATPDOMapping.md
+    - '진단 기록': Chapter3/DiagnosisHistory.md
+    - '오토튜닝': Chapter3/AutoTuning.md
