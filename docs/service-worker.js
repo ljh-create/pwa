@@ -1,5 +1,5 @@
-const CACHE_NAME = "network-setting-pwa-v10";
-const OFFLINE_PAGE = "/offline.html"; 
+const CACHE_NAME = "network-setting-pwa-v12";
+const OFFLINE_PAGE = "/offline.html"; // ✅ 오프라인 전용 페이지 추가
 
 const urlsToCache = [
     "/",  
@@ -10,20 +10,20 @@ const urlsToCache = [
     OFFLINE_PAGE
 ];
 
-// 파일 목록을 동적으로 로드 (JSON 오류 처리 추가)
+// 파일 목록을 동적으로 로드 (JSON 검사 추가)
 async function loadFileList() {
     try {
         const response = await fetch("/fileList.json");
 
-        // HTTP 응답이 정상인지 확인 (404 방지)
+        // 응답이 정상적인지 확인
         if (!response.ok) {
             console.error("❌ 파일 리스트 로드 실패: HTTP " + response.status);
             return urlsToCache;
         }
 
-        // JSON 파싱 전에 텍스트로 먼저 확인
+        // JSON 파싱 전에 텍스트로 먼저 확인 (HTML 오류 방지)
         const text = await response.text();
-        if (text.startsWith("<")) {  // JSON이 아니라 HTML이면 (404 등)
+        if (text.startsWith("<")) {  // JSON이 아니라 HTML이라면 (404 등)
             console.error("❌ fileList.json이 JSON 형식이 아님");
             return urlsToCache;
         }
@@ -40,22 +40,22 @@ async function loadFileList() {
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
-            return caches.open(CACHE_NAME).then(cache => cache.addAll(files));
+            return caches.open(CACHE_NAME).then(cache => {
+                console.log("✅ 캐싱할 파일 목록:", files);
+                return cache.addAll(files);
+            });
+        }).catch(error => {
+            console.error("❌ 캐싱 중 오류 발생:", error);
         }).then(() => self.skipWaiting())
     );
 });
 
-// 요청을 가로채서 캐싱된 데이터 제공
+// **fetch 이벤트 수정 (오프라인에서도 작동하도록)**
 self.addEventListener("fetch", event => {
     event.respondWith(
         caches.match(event.request).then(response => {
-            return response || fetch(event.request).then(fetchResponse => {
-                return caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, fetchResponse.clone());
-                    return fetchResponse;
-                });
-            });
-        }).catch(() => caches.match(OFFLINE_PAGE)) // ✅ 오프라인 시 캐싱된 페이지 제공
+            return response || fetch(event.request).catch(() => caches.match(OFFLINE_PAGE));
+        })
     );
 });
 
