@@ -1,25 +1,34 @@
-const CACHE_NAME = "network-setting-pwa-v4";
+const CACHE_NAME = "network-setting-pwa-v7";
 const urlsToCache = [
-    "/",                // 기본 페이지
-    "/index.html",      // 메인 페이지
-    "/search_index.json",  // ✅ 검색 데이터 캐싱 추가
-    "/manifest.webmanifest",  // PWA 메타 정보 추가
-    "/service-worker.js", // 서비스 워커 자체도 캐싱
-    "/assets/FASTECH.png",
-    "/assets/icon-192x192.png",
-    "/assets/icon-512x512.png"
+    "/",  
+    "/index.html",  
+    "/manifest.webmanifest",
+    "/search_index.json",
+    "/service-worker.js"
 ];
 
-// 서비스 워커 설치 시 캐시 저장
+// 파일 목록을 동적으로 로드
+async function loadFileList() {
+    try {
+        const response = await fetch("/fileList.json"); // 🔹 자동 생성된 파일 불러오기
+        const files = await response.json();
+        return [...urlsToCache, ...files];
+    } catch (error) {
+        console.error("❌ 파일 리스트 로드 실패:", error);
+        return urlsToCache;
+    }
+}
+
+// 서비스 워커 설치 시 파일 목록을 불러와 캐싱
 self.addEventListener("install", event => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
-            .then(() => self.skipWaiting()) // 즉시 활성화
+        loadFileList().then(files => {
+            return caches.open(CACHE_NAME).then(cache => cache.addAll(files));
+        }).then(() => self.skipWaiting())
     );
 });
 
-// 요청 가로채기 및 캐싱된 데이터 반환
+// 요청을 가로채서 캐싱된 데이터 제공
 self.addEventListener("fetch", event => {
     event.respondWith(
         caches.match(event.request).then(response => {
@@ -41,6 +50,6 @@ self.addEventListener("activate", event => {
                 cacheNames.filter(cache => cache !== CACHE_NAME)
                           .map(cache => caches.delete(cache))
             );
-        }).then(() => self.clients.claim()) // 활성화 즉시 컨트롤 적용
+        }).then(() => self.clients.claim())
     );
 });
