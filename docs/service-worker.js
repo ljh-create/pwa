@@ -1,11 +1,11 @@
-const CACHE_NAME = "network-setting-pwa-v21";
+const CACHE_NAME = "network-setting-pwa-v23";
 
 const urlsToCache = [
     "/",  
     "/index.html",  
     "/manifest.webmanifest",
-    "/search_index.json",
-    "/service-worker.js"
+    "/service-worker.js",
+    "/search/search_index.json" // ✅ 올바른 경로로 수정
 ];
 
 // 파일 목록을 동적으로 로드하여 캐싱
@@ -21,7 +21,7 @@ async function loadFileList() {
     }
 }
 
-// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
+// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱 (404 에러 방지)**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
@@ -34,7 +34,9 @@ self.addEventListener("install", event => {
                                 if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
                                 return cache.put(file, response.clone());
                             })
-                            .catch(error => console.warn(`⚠️ 캐싱 실패: ${file}`, error))
+                            .catch(error => {
+                                console.warn(`⚠️ 캐싱 실패 (무시됨): ${file}`, error);
+                            })
                     )
                 );
             });

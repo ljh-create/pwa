@@ -3,7 +3,6 @@
   publish = "site"
 
 [[headers]]
-  for = "/service-worker.js"
+  for = "/search/search_index.json"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
-    Service-Worker-Allowed = "/"
