@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v20";
+const CACHE_NAME = "network-setting-pwa-v21";
 
 const urlsToCache = [
     "/",  
@@ -21,13 +21,22 @@ async function loadFileList() {
     }
 }
 
-// **서비스 워커 설치 시 모든 파일 캐싱**
+// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
             return caches.open(CACHE_NAME).then(cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
-                return cache.addAll(files);
+                return Promise.all(
+                    files.map(file =>
+                        fetch(file)
+                            .then(response => {
+                                if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
+                                return cache.put(file, response.clone());
+                            })
+                            .catch(error => console.warn(`⚠️ 캐싱 실패: ${file}`, error))
+                    )
+                );
             });
         }).then(() => self.skipWaiting())
     );
@@ -44,10 +53,7 @@ self.addEventListener("fetch", event => {
                         return networkResponse;
                     });
                 })
-                .catch(() => {
-                    console.warn(`⚠️ 네트워크 요청 실패: ${event.request.url}`);
-                    return caches.match("/index.html"); // 오프라인 시 항상 index.html 제공
-                });
+                .catch(() => caches.match("/index.html"));  // 네트워크 실패 시 기본 index.html 제공
         })
     );
 });

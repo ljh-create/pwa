@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const directories = ["site"];
-const outputFile = "site/fileList.json"; // ✅ Netlify 배포를 위해 `site/` 내부에 저장
+const outputFile = "site/fileList.json";
 
 function getAllFiles(dirPath, fileArray = []) {
     const files = fs.readdirSync(dirPath);
@@ -17,9 +17,8 @@ function getAllFiles(dirPath, fileArray = []) {
     return fileArray;
 }
 
-// 모든 폴더에서 파일 리스트 가져오기
-const allFiles = directories.flatMap(dir => getAllFiles(dir));
+// 파일이 존재하는지 확인 후 저장
+const allFiles = directories.flatMap(dir => getAllFiles(dir)).filter(file => fs.existsSync("site" + file));
 
-// `site/fileList.json`에 저장
 fs.writeFileSync(outputFile, JSON.stringify(allFiles, null, 2));
 console.log(`✅ 모든 파일이 ${outputFile}에 저장되었습니다.`);
