@@ -1,36 +1,66 @@
-const CACHE_NAME = "network-setting-pwa-v2";
+const CACHE_NAME = "network-setting-pwa-v23";
+
 const urlsToCache = [
-    "/",
-    "/index.html",
-    "/assets/FASTECH.png",
-    "/assets/icon-192x192.png",
-    "/assets/icon-512x512.png"
+    "/",  
+    "/index.html",  
+    "/manifest.webmanifest",
+    "/service-worker.js",
+    "/search/search_index.json" // ✅ 올바른 경로로 수정
 ];
 
-// 설치 이벤트 (캐시 저장)
+// 파일 목록을 동적으로 로드하여 캐싱
+async function loadFileList() {
+    try {
+        const response = await fetch("/fileList.json");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const files = await response.json();
+        return [...urlsToCache, ...files];
+    } catch (error) {
+        console.error("❌ 파일 리스트 로드 실패, 기본 파일만 캐싱:", error);
+        return urlsToCache;
+    }
+}
+
+// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱 (404 에러 방지)**
 self.addEventListener("install", event => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
-            .then(() => self.skipWaiting()) // 즉시 활성화
+        loadFileList().then(files => {
+            return caches.open(CACHE_NAME).then(cache => {
+                console.log("✅ 캐싱할 파일 목록:", files);
+                return Promise.all(
+                    files.map(file =>
+                        fetch(file)
+                            .then(response => {
+                                if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
+                                return cache.put(file, response.clone());
+                            })
+                            .catch(error => {
+                                console.warn(`⚠️ 캐싱 실패 (무시됨): ${file}`, error);
+                            })
+                    )
+                );
+            });
+        }).then(() => self.skipWaiting())
     );
 });
 
-// 요청 가로채기 및 캐싱된 데이터 반환 (동적 캐싱 추가)
+// **fetch 이벤트 수정 (오프라인에서도 모든 페이지 제공)**
 self.addEventListener("fetch", event => {
     event.respondWith(
         caches.match(event.request).then(response => {
-            return response || fetch(event.request).then(fetchResponse => {
-                return caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, fetchResponse.clone());
-                    return fetchResponse;
-                });
-            });
-        }).catch(() => caches.match("/index.html"))  // 오프라인 시 기본 페이지 제공
+            return response || fetch(event.request)
+                .then(networkResponse => {
+                    return caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, networkResponse.clone()); // 온라인 시 방문한 페이지 자동 캐싱
+                        return networkResponse;
+                    });
+                })
+                .catch(() => caches.match("/index.html"));  // 네트워크 실패 시 기본 index.html 제공
+        })
     );
 });
 
-// 오래된 캐시 정리
+// **오래된 캐시 정리**
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -38,6 +68,6 @@ self.addEventListener("activate", event => {
                 cacheNames.filter(cache => cache !== CACHE_NAME)
                           .map(cache => caches.delete(cache))
             );
-        })
+        }).then(() => self.clients.claim())
     );
 });
