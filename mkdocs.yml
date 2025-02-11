@@ -57,13 +57,13 @@ nav:
   - 설치하기: chapter_1_Install.md
   - 프로그램 실행하기: chapter_2_Run_Program.md
   - 화면 설명: 
-    - '메인 화면': MainWindow.md
-    - '동작 테스트': MotionTest.md
-    - '알람 기록': AlarmHistory.md
-    - 'EtherCAT 상태 모니터링': EtherCATMonitoring.md
-    - 'EtherCAT 파라미터': EtherCATParameter.md
-    - 'Network 상태': NetworkStatus.md
-    - 'EtherCAT Object 사전': EtherCATObjectDictionary.md
-    - 'EtherCAT PDO 확인': EtherCATPDOMapping.md
-    - '진단 기록': DiagnosisHistory.md
-    - '오토튜닝': AutoTuning.md
+    - '메인 화면': Chapter3/MainWindow.md
+    - '동작 테스트': Chapter3/MotionTest.md
+    - '알람 기록': Chapter3/AlarmHistory.md
+    - 'EtherCAT 상태 모니터링': Chapter3/EtherCATMonitoring.md
+    - 'EtherCAT 파라미터': Chapter3/EtherCATParameter.md
+    - 'Network 상태': Chapter3/NetworkStatus.md
+    - 'EtherCAT Object 사전': Chapter3/EtherCATObjectDictionary.md
+    - 'EtherCAT PDO 확인': Chapter3/EtherCATPDOMapping.md
+    - '진단 기록': Chapter3/DiagnosisHistory.md
+    - '오토튜닝': Chapter3/AutoTuning.md
