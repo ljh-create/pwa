@@ -11,7 +11,8 @@ function getAllFiles(dirPath, fileArray = []) {
         if (fs.statSync(fullPath).isDirectory()) {
             getAllFiles(fullPath, fileArray);
         } else {
-            fileArray.push("/" + fullPath.replace(/\\/g, "/").replace("site/", ""));
+            // ✅ 파일 경로를 소문자로 변환
+            fileArray.push("/" + fullPath.replace(/\\/g, "/").replace("site/", "").toLowerCase());
         }
     });
     return fileArray;
