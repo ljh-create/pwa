@@ -1,11 +1,11 @@
-const CACHE_NAME = "network-setting-pwa-v25";
+const CACHE_NAME = "network-setting-pwa-v23";
 
 const urlsToCache = [
     "/",  
     "/index.html",  
     "/manifest.webmanifest",
     "/service-worker.js",
-    "/search/search_index.json"
+    "/search/search_index.json" // ✅ 올바른 경로로 수정
 ];
 
 // 파일 목록을 동적으로 로드하여 캐싱
@@ -14,14 +14,14 @@ async function loadFileList() {
         const response = await fetch("/fileList.json");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const files = await response.json();
-        return [...urlsToCache, ...files]; // ✅ 변환 없이 원래 리스트 유지
+        return [...urlsToCache, ...files];
     } catch (error) {
         console.error("❌ 파일 리스트 로드 실패, 기본 파일만 캐싱:", error);
         return urlsToCache;
     }
 }
 
-// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
+// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱 (404 에러 방지)**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
@@ -29,12 +29,14 @@ self.addEventListener("install", event => {
                 console.log("✅ 캐싱할 파일 목록:", files);
                 return Promise.all(
                     files.map(file =>
-                        fetch(file).then(response => {
-                            if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
-                            return cache.put(file, response.clone());
-                        }).catch(error => {
-                            console.warn(`⚠️ 캐싱 실패 (무시됨): ${file}`, error);
-                        })
+                        fetch(file)
+                            .then(response => {
+                                if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
+                                return cache.put(file, response.clone());
+                            })
+                            .catch(error => {
+                                console.warn(`⚠️ 캐싱 실패 (무시됨): ${file}`, error);
+                            })
                     )
                 );
             });
@@ -53,13 +55,7 @@ self.addEventListener("fetch", event => {
                         return networkResponse;
                     });
                 })
-                .catch(() => {
-                    // **요청한 파일이 없을 경우 index.html이 아니라 404.html을 반환**
-                    if (event.request.destination === "document") {
-                        return caches.match("/404.html");
-                    }
-                    return caches.match("/index.html");
-                });
+                .catch(() => caches.match("/index.html"));  // 네트워크 실패 시 기본 index.html 제공
         })
     );
 });
