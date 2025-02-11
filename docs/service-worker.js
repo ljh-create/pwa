@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v29";
+const CACHE_NAME = "network-setting-pwa-v36";
 
 const urlsToCache = [
     "/",  
@@ -23,24 +23,30 @@ async function loadFileList() {
 // **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
 self.addEventListener("install", event => {
     event.waitUntil(
-        loadFileList().then(files => {
-            return caches.open(CACHE_NAME).then(cache => {
-                return Promise.all(
-                    files.map(file =>
-                        fetch(file)
-                            .then(response => {
-                                if (!response.ok) throw new Error();
-                                return cache.put(file, response.clone());
-                            })
-                            .catch(() => {})
-                    )
-                );
-            });
-        }).then(() => self.skipWaiting())
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cache => caches.delete(cache)) // ✅ 기존 캐시 삭제
+            );
+        }).then(() =>
+            loadFileList().then(files => {
+                return caches.open(CACHE_NAME).then(cache => {
+                    return Promise.all(
+                        files.map(file =>
+                            fetch(file)
+                                .then(response => {
+                                    if (!response.ok) throw new Error();
+                                    return cache.put(file, response.clone());
+                                })
+                                .catch(() => {})
+                        )
+                    );
+                });
+            }).then(() => self.skipWaiting())
+        )
     );
 });
 
-// **fetch 이벤트 수정 (오프라인에서도 모든 페이지 제공)**
+// **fetch 이벤트 수정 (PWA에서도 모든 HTML 페이지 제공)**
 self.addEventListener("fetch", event => {
     event.respondWith(
         caches.match(event.request).then(response => {
@@ -52,23 +58,25 @@ self.addEventListener("fetch", event => {
                     });
                 })
                 .catch(() => {
-                    if (event.request.url.includes("/Chapter3/")) {
-                        return caches.match("/404.html");
+                    if (event.request.destination === "document") {
+                        return caches.match(event.request) || caches.match("/index.html"); // ✅ PWA에서도 모든 HTML 페이지 정상적으로 제공
                     }
-                    return caches.match("/index.html");
+                    return caches.match(event.request);
                 });
         })
     );
 });
 
-// **오래된 캐시 정리**
+// **기존 캐시 완전 삭제 및 새로운 캐시 적용**
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.filter(cache => cache !== CACHE_NAME)
-                          .map(cache => caches.delete(cache))
+                          .map(cache => caches.delete(cache)) // ✅ 기존 캐시 삭제
             );
-        }).then(() => self.clients.claim())
+        }).then(() => {
+            return self.clients.claim(); // ✅ 활성화된 모든 탭에 서비스 워커 적용
+        })
     );
 });
