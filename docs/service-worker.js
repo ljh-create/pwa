@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v36";
+const CACHE_NAME = "network-setting-pwa-v37";
 
 const urlsToCache = [
     "/",  
@@ -20,7 +20,7 @@ async function loadFileList() {
     }
 }
 
-// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
+// **서비스 워커 설치 시 모든 파일을 캐싱**
 self.addEventListener("install", event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -46,7 +46,7 @@ self.addEventListener("install", event => {
     );
 });
 
-// **fetch 이벤트 수정 (PWA에서도 모든 HTML 페이지 제공)**
+// **fetch 이벤트 수정 (PWA와 웹사이트 모두 오프라인 지원)**
 self.addEventListener("fetch", event => {
     event.respondWith(
         caches.match(event.request).then(response => {
@@ -59,7 +59,7 @@ self.addEventListener("fetch", event => {
                 })
                 .catch(() => {
                     if (event.request.destination === "document") {
-                        return caches.match(event.request) || caches.match("/index.html"); // ✅ PWA에서도 모든 HTML 페이지 정상적으로 제공
+                        return caches.match(event.request) || caches.match("/index.html"); // ✅ PWA와 웹사이트에서 모든 HTML 요청 처리
                     }
                     return caches.match(event.request);
                 });
