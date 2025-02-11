@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v24";
+const CACHE_NAME = "network-setting-pwa-v25";
 
 const urlsToCache = [
     "/",  
@@ -14,14 +14,14 @@ async function loadFileList() {
         const response = await fetch("/fileList.json");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const files = await response.json();
-        return [...urlsToCache, ...files.map(file => file.toLowerCase())]; // ✅ 모든 파일 경로를 소문자로 변환
+        return [...urlsToCache, ...files]; // ✅ 변환 없이 원래 리스트 유지
     } catch (error) {
         console.error("❌ 파일 리스트 로드 실패, 기본 파일만 캐싱:", error);
         return urlsToCache;
     }
 }
 
-// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱 (404 에러 방지)**
+// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
@@ -44,19 +44,22 @@ self.addEventListener("install", event => {
 
 // **fetch 이벤트 수정 (오프라인에서도 모든 페이지 제공)**
 self.addEventListener("fetch", event => {
-    const requestUrl = new URL(event.request.url);
-    const lowercaseUrl = requestUrl.pathname.toLowerCase(); // ✅ 요청 경로를 소문자로 변환
-
     event.respondWith(
-        caches.match(lowercaseUrl).then(response => {
+        caches.match(event.request).then(response => {
             return response || fetch(event.request)
                 .then(networkResponse => {
                     return caches.open(CACHE_NAME).then(cache => {
-                        cache.put(lowercaseUrl, networkResponse.clone()); // 온라인 시 방문한 페이지 자동 캐싱
+                        cache.put(event.request, networkResponse.clone()); // 온라인 시 방문한 페이지 자동 캐싱
                         return networkResponse;
                     });
                 })
-                .catch(() => caches.match("/index.html"));  // 네트워크 실패 시 기본 index.html 제공
+                .catch(() => {
+                    // **요청한 파일이 없을 경우 index.html이 아니라 404.html을 반환**
+                    if (event.request.destination === "document") {
+                        return caches.match("/404.html");
+                    }
+                    return caches.match("/index.html");
+                });
         })
     );
 });
