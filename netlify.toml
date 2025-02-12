@@ -2,28 +2,25 @@
   command = "pip install --upgrade pip && pip install -r requirements.txt && mkdocs build && node generateFileList.js"
   publish = "site"
 
-# ✅ 서비스 워커의 캐시 방지 설정 (항상 최신 버전 유지)
 [[headers]]
   for = "/service-worker.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
     Pragma = "no-cache"
-    Expires = 0
+    Expires = "0"   # ✅ 수정: 문자열로 변경
 
-# ✅ fileList.json도 항상 최신 상태 유지
 [[headers]]
   for = "/fileList.json"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
-# ✅ MkDocs 검색 인덱스도 최신 상태 유지
 [[headers]]
   for = "/search/search_index.json"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
-# ✅ 기존 JavaScript 번들의 캐시 방지 설정 유지
 [[headers]]
   for = "/assets/javascripts/bundle.60a45f97.min.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
