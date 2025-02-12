@@ -1,11 +1,12 @@
-const CACHE_NAME = "network-setting-pwa-v41"; // ✅ 버전 업데이트
+const CACHE_NAME = "network-setting-pwa-v42"; // ✅ 최신 버전 업데이트
 
 const urlsToCache = [
     "/",
     "/index.html",
     "/manifest.webmanifest",
     "/service-worker.js",
-    "/search/search_index.json"
+    "/search/search_index.json",
+    "/404.html"
 ];
 
 // **파일 목록을 동적으로 로드하여 캐싱**
@@ -50,7 +51,7 @@ self.addEventListener("install", event => {
     );
 });
 
-// **fetch 이벤트 수정 (오프라인 지원)**
+// **fetch 이벤트 수정 (SPA에서도 정상 동작)**
 self.addEventListener("fetch", event => {
     console.log(`🔍 요청됨: ${event.request.url}`);
     const url = new URL(event.request.url);
@@ -80,28 +81,29 @@ self.addEventListener("fetch", event => {
                                 console.log(`✅ ${url.pathname}.html을(를) 캐시에서 찾음`);
                                 return cachedResponse;
                             }
-                            console.warn(`❌ ${url.pathname}.html 도 캐시에 없음, index.html 반환`);
-                            return caches.match("/index.html"); // ✅ 기본적으로 index.html 반환
+                            console.warn(`❌ ${url.pathname}.html 도 캐시에 없음, 404.html 반환`);
+                            return caches.match("/404.html");
                         });
                     }
 
-                    // ✅ 기존 요청이 실패하면 기본적으로 `index.html` 반환
-                    return caches.match(event.request).then(cachedResponse => {
-                        if (cachedResponse) {
-                            return cachedResponse;
-                        }
-                        console.warn(`❌ 요청한 파일이 캐시에 없음, index.html 반환`);
-                        return caches.match("/index.html");
-                    });
+                    // ✅ 기존 요청이 실패하면 기본적으로 `404.html` 반환
+                    return caches.match("/404.html");
                 });
-        }).catch(() => {
-            console.error(`❌ 캐시에서 ${event.request.url}을(를) 찾을 수 없음`);
-            return caches.match("/index.html");
         })
     );
 });
 
-// **오래된 캐시 정리 및 클라이언트 새로고침**
+// **SPA에서도 서비스 워커가 정상 동작하도록 추가**
+self.addEventListener("message", event => {
+    if (event.data === "refresh-fetch") {
+        console.log("🔄 `fetch` 이벤트 강제 트리거");
+        self.clients.matchAll().then(clients => {
+            clients.forEach(client => client.navigate(client.url));
+        });
+    }
+});
+
+// **오래된 캐시 정리**
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -111,11 +113,6 @@ self.addEventListener("activate", event => {
             );
         }).then(() => {
             return self.clients.claim();
-        }).then(() => {
-            // ✅ 모든 클라이언트 새로고침 (최신 서비스 워커 적용)
-            self.clients.matchAll({ type: "window" }).then(clients => {
-                clients.forEach(client => client.navigate(client.url));
-            });
         })
     );
 });

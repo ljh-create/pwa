@@ -7,20 +7,9 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
     Pragma = "no-cache"
-    Expires = "0"   # ✅ 수정: 문자열로 변경
+    Expires = "0"
 
 [[headers]]
   for = "/fileList.json"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/search/search_index.json"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/assets/javascripts/bundle.60a45f97.min.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
