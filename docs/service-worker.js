@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v30"; // ✅ 버전 변경
+const CACHE_NAME = "network-setting-pwa-v31"; // ✅ 버전 업데이트
 
 const urlsToCache = [
     "/",
@@ -27,9 +27,22 @@ async function loadFileList() {
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
-            return caches.open(CACHE_NAME).then(cache => {
+            return caches.open(CACHE_NAME).then(async cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
-                return cache.addAll(files);
+
+                // ✅ 각 파일을 개별적으로 캐싱 (일부 실패해도 진행)
+                await Promise.all(
+                    files.map(async file => {
+                        try {
+                            const response = await fetch(file);
+                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                            console.log(`📥 캐싱됨: ${file}`);
+                            await cache.put(file, response);
+                        } catch (error) {
+                            console.warn(`⚠️ 캐싱 실패 (무시됨): ${file}`, error);
+                        }
+                    })
+                );
             });
         }).then(() => {
             self.skipWaiting();  // ✅ 새 서비스 워커 즉시 활성화
@@ -47,6 +60,7 @@ self.addEventListener("fetch", event => {
                 console.log(`✅ 캐시에서 찾음: ${event.request.url}`);
                 return response;
             }
+
             return fetch(event.request)
                 .then(networkResponse => {
                     console.log(`🌐 네트워크에서 가져옴: ${event.request.url}`);
@@ -57,14 +71,14 @@ self.addEventListener("fetch", event => {
                 })
                 .catch(() => {
                     console.warn(`🚫 오프라인 상태에서 ${event.request.url} 찾을 수 없음`);
-
                     const url = new URL(event.request.url);
 
-                    // ✅ `.html` 확장자가 없는 경우 자동 추가하여 검색
+                    // ✅ `.html`이 없는 경우 자동 추가하여 검색
                     if (!url.pathname.includes(".") && !url.pathname.endsWith("/")) {
                         return caches.match(url.pathname + ".html") || caches.match("/404.html");
                     }
 
+                    // ✅ 기존 요청이 실패하면 `/404.html` 반환
                     return caches.match(event.request) || caches.match("/404.html");
                 });
         })
