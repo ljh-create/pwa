@@ -38,9 +38,12 @@ markdown_extensions:
 # PWA 적용 (service-worker 및 manifest 연결)
 extra_javascript:
   - service-worker.js
+  - fileList.json  # ✅ 명시적으로 추가 (PWA 파일 누락 방지)
   - assets/javascripts/glightbox.min.js
   - assets/javascripts/bundle.60a45f97.min.js
+
 use_directory_urls: false
+
 
 extra:
   manifest: manifest.webmanifest
