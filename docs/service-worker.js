@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v32"; // ✅ 버전 업데이트
+const CACHE_NAME = "network-setting-pwa-v33"; // ✅ 버전 업데이트
 
 const urlsToCache = [
     "/",
@@ -30,7 +30,7 @@ self.addEventListener("install", event => {
             return caches.open(CACHE_NAME).then(async cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
 
-                // ✅ 개별적으로 캐싱 (일부 실패해도 진행)
+                // ✅ 각 파일을 개별적으로 캐싱 (일부 실패해도 진행)
                 await Promise.all(
                     files.map(async file => {
                         try {
