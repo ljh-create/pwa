@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v33"; // ✅ 버전 업데이트
+const CACHE_NAME = "network-setting-pwa-v34"; // ✅ 버전 업데이트
 
 const urlsToCache = [
     "/",
@@ -30,7 +30,7 @@ self.addEventListener("install", event => {
             return caches.open(CACHE_NAME).then(async cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
 
-                // ✅ 각 파일을 개별적으로 캐싱 (일부 실패해도 진행)
+                // ✅ 개별적으로 캐싱 (일부 실패해도 진행)
                 await Promise.all(
                     files.map(async file => {
                         try {
@@ -53,6 +53,7 @@ self.addEventListener("install", event => {
 // **fetch 이벤트 수정 (오프라인 지원)**
 self.addEventListener("fetch", event => {
     console.log(`🔍 요청됨: ${event.request.url}`);
+    const url = new URL(event.request.url);
 
     event.respondWith(
         caches.match(event.request).then(response => {
@@ -71,16 +72,28 @@ self.addEventListener("fetch", event => {
                 })
                 .catch(() => {
                     console.warn(`🚫 오프라인 상태에서 ${event.request.url} 찾을 수 없음`);
-                    const url = new URL(event.request.url);
 
-                    // ✅ `.html`이 없는 경우 자동 추가하여 검색
+                    // ✅ `.html` 확장자가 없는 경우 자동 추가하여 검색
                     if (!url.pathname.includes(".") && !url.pathname.endsWith("/")) {
-                        return caches.match(url.pathname + ".html") || caches.match("/404.html");
+                        return caches.match(url.pathname + ".html").then(cachedResponse => {
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            return caches.match("/404.html");
+                        });
                     }
 
                     // ✅ 기존 요청이 실패하면 `/404.html` 반환
-                    return caches.match(event.request) || caches.match("/404.html");
+                    return caches.match(event.request).then(cachedResponse => {
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+                        return caches.match("/404.html");
+                    });
                 });
+        }).catch(() => {
+            console.error(`❌ 캐시에서 ${event.request.url}을(를) 찾을 수 없음`);
+            return new Response("페이지를 찾을 수 없습니다.", { status: 404, statusText: "Not Found" });
         })
     );
 });
