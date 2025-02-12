@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v31";
+const CACHE_NAME = "network-setting-pwa-v29";
 
 const urlsToCache = [
     "/",
@@ -50,19 +50,11 @@ self.addEventListener("install", event => {
 // **fetch 이벤트 수정 (오프라인에서도 모든 페이지 제공)**
 self.addEventListener("fetch", event => {
     console.log(`🔍 요청됨: ${event.request.url}`);
-    let requestUrl = new URL(event.request.url);
-    let cacheKey = requestUrl.pathname;
-
-    // ✅ `.html` 확장자가 없는 경우 자동으로 붙여서 캐시 검색
-    if (!cacheKey.endsWith(".html") && !cacheKey.includes(".")) {
-        cacheKey += ".html";
-        console.log(`🔄 자동으로 변경된 요청 경로: ${cacheKey}`);
-    }
 
     event.respondWith(
-        caches.match(cacheKey).then(response => {
+        caches.match(event.request).then(response => {
             if (response) {
-                console.log(`✅ 캐시에서 찾음: ${cacheKey}`);
+                console.log(`✅ 캐시에서 찾음: ${event.request.url}`);
                 return response;
             }
 
@@ -77,7 +69,7 @@ self.addEventListener("fetch", event => {
                 .catch(() => {
                     console.warn(`🚫 오프라인 상태에서 ${event.request.url} 찾을 수 없음`);
 
-                    // ✅ `fileList.json`에서 가져온 파일 리스트를 기반으로 HTML 페이지 찾기
+                    // ✅ fileList.json에서 가져온 파일 리스트를 기반으로 HTML 페이지 찾기
                     return caches.match("/fileList.json").then(fileListResponse => {
                         if (!fileListResponse) {
                             console.warn("⚠️ fileList.json을 찾을 수 없음, 기본 index.html 반환");
@@ -85,9 +77,11 @@ self.addEventListener("fetch", event => {
                         }
 
                         return fileListResponse.json().then(fileList => {
-                            if (fileList.includes(cacheKey)) {
-                                console.log(`📄 요청된 페이지 (${cacheKey})가 존재하므로 반환`);
-                                return caches.match(cacheKey);
+                            const requestedPath = new URL(event.request.url).pathname;
+
+                            if (fileList.includes(requestedPath)) {
+                                console.log(`📄 요청된 페이지 (${requestedPath})가 존재하므로 반환`);
+                                return caches.match(requestedPath);
                             }
 
                             console.log("🔍 요청된 페이지를 찾을 수 없어 404.html 반환");
