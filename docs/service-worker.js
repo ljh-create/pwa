@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v28";
+const CACHE_NAME = "network-setting-pwa-v29"; // 버전 변경
 
 const urlsToCache = [
     "/",
@@ -22,7 +22,7 @@ async function loadFileList() {
     }
 }
 
-// **서비스 워커 설치 시 모든 파일 개별적으로 캐싱**
+// **서비스 워커 설치 시 캐시 적용**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
@@ -42,11 +42,13 @@ self.addEventListener("install", event => {
                     )
                 );
             });
-        }).then(() => self.skipWaiting())
+        }).then(() => {
+            self.skipWaiting();  // ✅ 새 서비스 워커 즉시 활성화
+        })
     );
 });
 
-// **fetch 이벤트 수정 (오프라인에서도 모든 페이지 제공)**
+// **fetch 이벤트 수정 (오프라인 지원)**
 self.addEventListener("fetch", event => {
     console.log(`🔍 요청됨: ${event.request.url}`);
 
@@ -67,20 +69,18 @@ self.addEventListener("fetch", event => {
                 .catch(() => {
                     console.warn(`🚫 오프라인 상태에서 ${event.request.url} 찾을 수 없음`);
 
-                    // ✅ `Chapter3` 관련 파일이면 index.html이 아니라 404.html 반환
                     if (event.request.url.includes("/Chapter3/")) {
                         console.log("🔍 `Chapter3` 관련 파일을 찾을 수 없음, 404.html 반환");
                         return caches.match("/404.html");
                     }
 
-                    // ✅ 기본적으로 index.html 반환
                     return caches.match("/index.html");
                 });
         })
     );
 });
 
-// **오래된 캐시 정리**
+// **오래된 캐시 정리 및 클라이언트 새로고침**
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -88,6 +88,13 @@ self.addEventListener("activate", event => {
                 cacheNames.filter(cache => cache !== CACHE_NAME)
                           .map(cache => caches.delete(cache))
             );
-        }).then(() => self.clients.claim())
+        }).then(() => {
+            return self.clients.claim();
+        }).then(() => {
+            // ✅ 모든 클라이언트 새로고침 (최신 서비스 워커 적용)
+            self.clients.matchAll({ type: "window" }).then(clients => {
+                clients.forEach(client => client.navigate(client.url));
+            });
+        })
     );
 });
