@@ -3,13 +3,6 @@
   publish = "site"
 
 [[headers]]
-  for = "/service-worker.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-    Pragma = "no-cache"
-    Expires = "0"
-
-[[headers]]
-  for = "/fileList.json"
+  for = "/assets/javascripts/bundle.60a45f97.min.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
