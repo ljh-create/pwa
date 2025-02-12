@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v37"; // ✅ 버전 업데이트
+const CACHE_NAME = "network-setting-pwa-v39"; // ✅ 버전 업데이트
 
 const urlsToCache = [
     "/",
@@ -22,15 +22,15 @@ async function loadFileList() {
     }
 }
 
-// **서비스 워커 설치 시 캐시 적용**
+// **서비스 워커 설치 시 모든 파일을 강제 캐싱**
 self.addEventListener("install", event => {
     event.waitUntil(
         loadFileList().then(files => {
             return caches.open(CACHE_NAME).then(async cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
 
-                // ✅ 모든 파일 개별적으로 캐싱 (일부 실패해도 진행)
-                await Promise.all(
+                // ✅ 모든 파일을 개별적으로 캐싱 (실패한 파일이 있어도 계속 진행)
+                await Promise.allSettled(
                     files.map(async file => {
                         try {
                             const response = await fetch(file);
@@ -42,6 +42,8 @@ self.addEventListener("install", event => {
                         }
                     })
                 );
+
+                console.log("✅ 모든 파일 캐싱 완료");
             });
         }).then(() => {
             self.skipWaiting();  // ✅ 새 서비스 워커 즉시 활성화
