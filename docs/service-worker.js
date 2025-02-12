@@ -1,12 +1,11 @@
-const CACHE_NAME = "network-setting-pwa-v34"; // ✅ 버전 업데이트
+const CACHE_NAME = "network-setting-pwa-v37"; // ✅ 버전 업데이트
 
 const urlsToCache = [
     "/",
     "/index.html",
     "/manifest.webmanifest",
     "/service-worker.js",
-    "/search/search_index.json",
-    "/404.html"
+    "/search/search_index.json"
 ];
 
 // **파일 목록을 동적으로 로드하여 캐싱**
@@ -18,7 +17,7 @@ async function loadFileList() {
         console.log("✅ fileList.json에서 로드된 파일 목록:", files);
         return [...urlsToCache, ...files];
     } catch (error) {
-        console.error("❌ 파일 리스트 로드 실패, 기본 파일만 캐싱:", error);
+        console.error("❌ fileList.json 로드 실패, 기본 파일만 캐싱:", error);
         return urlsToCache;
     }
 }
@@ -30,7 +29,7 @@ self.addEventListener("install", event => {
             return caches.open(CACHE_NAME).then(async cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
 
-                // ✅ 개별적으로 캐싱 (일부 실패해도 진행)
+                // ✅ 모든 파일 개별적으로 캐싱 (일부 실패해도 진행)
                 await Promise.all(
                     files.map(async file => {
                         try {
@@ -79,21 +78,23 @@ self.addEventListener("fetch", event => {
                             if (cachedResponse) {
                                 return cachedResponse;
                             }
-                            return caches.match("/404.html");
+                            console.warn(`❌ ${url.pathname}.html 도 캐시에 없음, index.html 반환`);
+                            return caches.match("/index.html"); // ✅ 기본적으로 index.html 반환
                         });
                     }
 
-                    // ✅ 기존 요청이 실패하면 `/404.html` 반환
+                    // ✅ 기존 요청이 실패하면 기본적으로 `index.html` 반환
                     return caches.match(event.request).then(cachedResponse => {
                         if (cachedResponse) {
                             return cachedResponse;
                         }
-                        return caches.match("/404.html");
+                        console.warn(`❌ 요청한 파일이 캐시에 없음, index.html 반환`);
+                        return caches.match("/index.html");
                     });
                 });
         }).catch(() => {
             console.error(`❌ 캐시에서 ${event.request.url}을(를) 찾을 수 없음`);
-            return new Response("페이지를 찾을 수 없습니다.", { status: 404, statusText: "Not Found" });
+            return caches.match("/index.html");
         })
     );
 });
