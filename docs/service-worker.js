@@ -1,4 +1,4 @@
-const CACHE_NAME = "network-setting-pwa-v39"; // ✅ 버전 업데이트
+const CACHE_NAME = "network-setting-pwa-v41"; // ✅ 버전 업데이트
 
 const urlsToCache = [
     "/",
@@ -29,7 +29,6 @@ self.addEventListener("install", event => {
             return caches.open(CACHE_NAME).then(async cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
 
-                // ✅ 모든 파일을 개별적으로 캐싱 (실패한 파일이 있어도 계속 진행)
                 await Promise.allSettled(
                     files.map(async file => {
                         try {
@@ -78,6 +77,7 @@ self.addEventListener("fetch", event => {
                     if (!url.pathname.includes(".") && !url.pathname.endsWith("/")) {
                         return caches.match(url.pathname + ".html").then(cachedResponse => {
                             if (cachedResponse) {
+                                console.log(`✅ ${url.pathname}.html을(를) 캐시에서 찾음`);
                                 return cachedResponse;
                             }
                             console.warn(`❌ ${url.pathname}.html 도 캐시에 없음, index.html 반환`);
