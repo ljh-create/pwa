@@ -1,11 +1,12 @@
-const CACHE_NAME = "network-setting-pwa-v29"; // 버전 변경
+const CACHE_NAME = "network-setting-pwa-v30"; // ✅ 버전 변경
 
 const urlsToCache = [
     "/",
     "/index.html",
     "/manifest.webmanifest",
     "/service-worker.js",
-    "/search/search_index.json"
+    "/search/search_index.json",
+    "/404.html"
 ];
 
 // **파일 목록을 동적으로 로드하여 캐싱**
@@ -28,19 +29,7 @@ self.addEventListener("install", event => {
         loadFileList().then(files => {
             return caches.open(CACHE_NAME).then(cache => {
                 console.log("✅ 캐싱할 파일 목록:", files);
-                return Promise.all(
-                    files.map(file =>
-                        fetch(file)
-                            .then(response => {
-                                if (!response.ok) throw new Error(`HTTP ${response.status} - ${file}`);
-                                console.log(`📥 캐싱됨: ${file}`);
-                                return cache.put(file, response.clone());
-                            })
-                            .catch(error => {
-                                console.warn(`⚠️ 캐싱 실패 (무시됨): ${file}`, error);
-                            })
-                    )
-                );
+                return cache.addAll(files);
             });
         }).then(() => {
             self.skipWaiting();  // ✅ 새 서비스 워커 즉시 활성화
@@ -69,12 +58,14 @@ self.addEventListener("fetch", event => {
                 .catch(() => {
                     console.warn(`🚫 오프라인 상태에서 ${event.request.url} 찾을 수 없음`);
 
-                    if (event.request.url.includes("/Chapter3/")) {
-                        console.log("🔍 `Chapter3` 관련 파일을 찾을 수 없음, 404.html 반환");
-                        return caches.match("/404.html");
+                    const url = new URL(event.request.url);
+
+                    // ✅ `.html` 확장자가 없는 경우 자동 추가하여 검색
+                    if (!url.pathname.includes(".") && !url.pathname.endsWith("/")) {
+                        return caches.match(url.pathname + ".html") || caches.match("/404.html");
                     }
 
-                    return caches.match("/index.html");
+                    return caches.match(event.request) || caches.match("/404.html");
                 });
         })
     );
