@@ -25,6 +25,11 @@ function getAllFiles(dirPath, fileArray = []) {
 
 const allFiles = getAllFiles(siteDirectory);
 
+// ✅ `404.html` 강제 추가 (만약 존재한다면)
+if (!allFiles.includes("/404.html") && fs.existsSync(path.join(siteDirectory, "404.html"))) {
+    allFiles.push("/404.html");
+}
+
 fs.writeFileSync(outputFile, JSON.stringify(allFiles, null, 2));
 
 console.log(`✅ fileList.json이 성공적으로 생성되었습니다! (${outputFile})`);

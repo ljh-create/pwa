@@ -1,11 +1,12 @@
-const CACHE_NAME = "network-setting-pwa-v28";
+const CACHE_NAME = "network-setting-pwa-v29";
 
 const urlsToCache = [
     "/",
     "/index.html",
     "/manifest.webmanifest",
     "/service-worker.js",
-    "/search/search_index.json"
+    "/search/search_index.json",
+    "/404.html"
 ];
 
 // **파일 목록을 동적으로 로드하여 캐싱**
@@ -56,6 +57,7 @@ self.addEventListener("fetch", event => {
                 console.log(`✅ 캐시에서 찾음: ${event.request.url}`);
                 return response;
             }
+
             return fetch(event.request)
                 .then(networkResponse => {
                     console.log(`🌐 네트워크에서 가져옴: ${event.request.url}`);
@@ -67,14 +69,25 @@ self.addEventListener("fetch", event => {
                 .catch(() => {
                     console.warn(`🚫 오프라인 상태에서 ${event.request.url} 찾을 수 없음`);
 
-                    // ✅ `Chapter3` 관련 파일이면 index.html이 아니라 404.html 반환
-                    if (event.request.url.includes("/Chapter3/")) {
-                        console.log("🔍 `Chapter3` 관련 파일을 찾을 수 없음, 404.html 반환");
-                        return caches.match("/404.html");
-                    }
+                    // ✅ fileList.json에서 가져온 파일 리스트를 기반으로 HTML 페이지 찾기
+                    return caches.match("/fileList.json").then(fileListResponse => {
+                        if (!fileListResponse) {
+                            console.warn("⚠️ fileList.json을 찾을 수 없음, 기본 index.html 반환");
+                            return caches.match("/index.html");
+                        }
 
-                    // ✅ 기본적으로 index.html 반환
-                    return caches.match("/index.html");
+                        return fileListResponse.json().then(fileList => {
+                            const requestedPath = new URL(event.request.url).pathname;
+
+                            if (fileList.includes(requestedPath)) {
+                                console.log(`📄 요청된 페이지 (${requestedPath})가 존재하므로 반환`);
+                                return caches.match(requestedPath);
+                            }
+
+                            console.log("🔍 요청된 페이지를 찾을 수 없어 404.html 반환");
+                            return caches.match("/404.html");
+                        });
+                    });
                 });
         })
     );
